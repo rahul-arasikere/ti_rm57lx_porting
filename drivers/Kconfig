@@ -1,14 +1,24 @@
 # Copyright (c) 2024 Rahul Vagish Arasikere
 # SPDX-License-Identifier: Apache-2.0
 
-menu "Drivers"
+menu "Device Drivers"
 
 if CLOCK_CONTROL
 rsource "clock_control/Kconfig.ti_hercules"
 endif
 
+if GPIO
+rsource "gpio/Kconfig.ti_hercules"
+endif
+
 if HWINFO
 rsource "hwinfo/Kconfig.ti_hercules"
 endif 
+
+rsource "interrupt_controller/Kconfig.ti_hercules"
+
+if SYS_CLOCK_EXISTS
+rsource "timer/Kconfig.ti_hercules"
+endif
 
 endmenu
