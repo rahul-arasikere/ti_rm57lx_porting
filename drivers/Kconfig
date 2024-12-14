@@ -1,6 +1,14 @@
-# Copyright (c) 2021 Nordic Semiconductor ASA
+# Copyright (c) 2024 Rahul Vagish Arasikere
 # SPDX-License-Identifier: Apache-2.0
 
 menu "Drivers"
-rsource "sensor/Kconfig"
+
+if CLOCK_CONTROL
+rsource "clock_control/Kconfig.ti_hercules"
+endif
+
+if HWINFO
+rsource "hwinfo/Kconfig.ti_hercules"
+endif 
+
 endmenu
