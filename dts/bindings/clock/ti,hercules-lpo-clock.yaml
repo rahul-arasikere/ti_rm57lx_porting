@@ -13,7 +13,7 @@ properties:
     type: boolean
     description: |
       Sets the trim values from flash OTP.
-  
+
   enable-lpo-bias:
     type: boolean
     description: |

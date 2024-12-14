@@ -13,7 +13,7 @@ endif
 
 if HWINFO
 rsource "hwinfo/Kconfig.ti_hercules"
-endif 
+endif
 
 rsource "interrupt_controller/Kconfig.ti_hercules"
 
