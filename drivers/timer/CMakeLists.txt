@@ -2,4 +2,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 zephyr_amend_library()
-zephyr_library_sources_ifdef(CONFIG_CLOCK_CONTROL_TI_HERCULES clock_control_ti_hercules.c)
+zephyr_library_sources_ifdef(CONFIG_TIMER_TI_HERCULES ti_hercules_rti_timer.c)

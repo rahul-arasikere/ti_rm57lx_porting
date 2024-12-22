@@ -1,0 +1,12 @@
+# Copyrights 2024 Rahul Arasikere <arasikere.rahul@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+config TIMER_TI_HERCULES
+        bool "TI Hercules RTI driver"
+        default y
+        depends on SOC_FAMILY_TI_HERCULES
+        depends on DT_HAS_TI_HERCULES_RTI_ENABLED
+	depends on CLOCK_CONTROL && PM
+	select TICKLESS_CAPABLE
+        help
+           Enable RM57Lx Real Time Interrupt driver to provide SYSTICK source.
