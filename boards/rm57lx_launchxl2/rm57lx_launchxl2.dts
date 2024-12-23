@@ -12,6 +12,10 @@
     compatible = "ti,launchxl2-rm57lx";
 };
 
+&vim {
+    status = "okay";
+};
+
 &oscin {
     status = "okay";
 };

@@ -14,6 +14,5 @@ config SOC_SERIES_RM57LX
         select CPU_HAS_DSP
         select CPU_HAS_DCACHE
         select CPU_HAS_ICACHE
-        select PLATFORM_SPECIFIC_INIT
         select CLOCK_CONTROL
         select ARM_CUSTOM_INTERRUPT_CONTROLLER
