@@ -262,3 +262,6 @@ static const struct clock_control_driver_api ti_hercules_gcm_clock_api = {
 	.get_status = ti_hercules_gcm_clock_get_status,
 	.get_rate = ti_hercules_gcm_clock_get_rate,
 	.configure = ti_hercules_gcm_clock_configure};
+
+DEVICE_DT_DEFINE(DT_NODELABEL(gcm), ti_hercules_gcm_clock_init, NULL, NULL, NULL, PRE_KERNEL_1,
+		 CONFIG_CLOCK_CONTROL_INIT_PRIORITY, &ti_hercules_gcm_clock_api);
