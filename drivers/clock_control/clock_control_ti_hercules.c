@@ -7,7 +7,7 @@
 
 #include <soc.h>
 #include <zephyr/drivers/clock_control.h>
-#include <zephyr/dt-bindings/clock/ti_hercules_clock.h>
+#include <zephyr/dt-bindings/clock/ti-hercules-clock.h>
 #include <zephyr/device.h>
 #include <zephyr/sys/util.h>
 
@@ -51,10 +51,10 @@ static uint32_t _errata_disable_plls(uint32_t plls)
 		/* Clear ESM and GLBSTAT PLL slip flags */
 		sys_regs_1->GBLSTAT = FBSLIP | RFSLIP;
 
-		if ((plls & BIT(PLL1)) == BIT(PLL1)) {
+		if ((plls & BIT(CLOCK_SRC_PLL1)) == BIT(CLOCK_SRC_PLL1)) {
 			esm_regs->SR1[0] = ESM_SRx_PLLxSLIP;
 		}
-		if ((plls & BIT(PLL2)) == BIT(PLL2)) {
+		if ((plls & BIT(CLOCK_SRC_PLL2)) == BIT(CLOCK_SRC_PLL2)) {
 			esm_regs->SR4[0] = ESM_SRx_PLLxSLIP;
 		}
 	}
@@ -65,15 +65,16 @@ static uint32_t _errata_disable_plls(uint32_t plls)
 }
 
 /** @fn static uint32_t _errata_SSWF021_45_both_plls(uint32_t count)
-*   @brief This handles the errata for PLL1 and PLL2. This function is called in device startup
+*   @brief This handles the errata for CLOCK_SRC_PLL1 and CLOCK_SRC_PLL2. This function is called in
+device startup
 *
 *   @param[in] count : Number of retries until both PLLs are locked successfully
 *                      Minimum value recommended is 5
 *
 *   @return 0 = Success (the PLL or both PLLs have successfully locked and then been disabled)
-*           1 = PLL1 failed to successfully lock in "count" tries
-*           2 = PLL2 failed to successfully lock in "count" tries
-*           3 = Neither PLL1 nor PLL2 successfully locked in "count" tries
+*           1 = CLOCK_SRC_PLL1 failed to successfully lock in "count" tries
+*           2 = CLOCK_SRC_PLL2 failed to successfully lock in "count" tries
+*           3 = Neither CLOCK_SRC_PLL1 nor CLOCK_SRC_PLL2 successfully locked in "count" tries
 *           4 = The workaround function was not able to disable at least one of the PLLs. The most
 likely reason is that a PLL is already being used as a clock source. This can be caused by the
 workaround function being called from the wrong place in the code.
@@ -92,7 +93,7 @@ static uint32_t _errata_SSWF021_45_both_plls(uint32_t count)
 	/* Now set VCLK = HCLK and enable peripherals */
 	sys_regs_1->CLKCNTL = PENA;
 	for (retries = 0; retries < count; retries++) {
-		fail_code = _errata_disable_plls(BIT(PLL1) | BIT(PLL2));
+		fail_code = _errata_disable_plls(BIT(CLOCK_SRC_PLL1) | BIT(CLOCK_SRC_PLL2));
 		if (fail_code != 0) {
 			break;
 		}
@@ -106,12 +107,13 @@ static uint32_t _errata_SSWF021_45_both_plls(uint32_t count)
 		sys_regs_1->PLLCTL1 = 0x20001A00;
 		sys_regs_1->PLLCTL2 = 0x3FC0723D;
 		sys_regs_2->PLLCTL3 = 0x20001A00;
-		sys_regs_1->CSDISCLR = BIT(PLL1) | BIT(PLL2);
+		sys_regs_1->CSDISCLR = BIT(CLOCK_SRC_PLL1) | BIT(CLOCK_SRC_PLL2);
 
-		/* Check for (PLL1 valid or PLL1 slip) and (PLL2 valid or PLL2 slip) */
-		while ((((sys_regs_1->CSVSTAT & BIT(PLL1)) == 0) &&
+		/* Check for (CLOCK_SRC_PLL1 valid or CLOCK_SRC_PLL1 slip) and (CLOCK_SRC_PLL2 valid
+		 * or CLOCK_SRC_PLL2 slip) */
+		while ((((sys_regs_1->CSVSTAT & BIT(CLOCK_SRC_PLL1)) == 0) &&
 			((esm_regs->SR1[0] & ESM_SRx_PLLxSLIP) == 0)) ||
-		       (((sys_regs_1->CSVSTAT & BIT(PLL2)) == 0) &&
+		       (((sys_regs_1->CSVSTAT & BIT(CLOCK_SRC_PLL2)) == 0) &&
 			((esm_regs->SR4[0] & ESM_SRx_PLLxSLIP) == 0))) {
 			/* Wait */
 		}
@@ -120,12 +122,13 @@ static uint32_t _errata_SSWF021_45_both_plls(uint32_t count)
 }
 
 struct ti_hercules_gcm_clock_config {
-	enum hercules_clk_srcs source;
-	enum hercules_clk_domains domain;
+	uint8_t source;
+	uint8_t domain;
 };
 
 struct ti_herc_periph_clk {
-	enum hercules_clk_domains domain;
+	uint8_t domain;
+	uint8_t source;
 	int flags;
 };
 
@@ -176,8 +179,9 @@ static int ti_hercules_gcm_clock_init(const struct device *dev)
 	 * This initialization sequence performs all the tasks that are not
 	 * required to be done at full application speed while the PLL locks.
 	 */
-	sys_regs_1->CSDISSET = BIT(PLL1) | BIT(PLL2);
-	while (sys_regs_1->CSDIS & (BIT(PLL1) | BIT(PLL2)) != (BIT(PLL1) | BIT(PLL2))) {
+	sys_regs_1->CSDISSET = BIT(CLOCK_SRC_PLL1) | BIT(CLOCK_SRC_PLL2);
+	while (sys_regs_1->CSDIS & (BIT(CLOCK_SRC_PLL1) | BIT(CLOCK_SRC_PLL2)) !=
+					   (BIT(CLOCK_SRC_PLL1) | BIT(CLOCK_SRC_PLL2))) {
 		/*nop*/;
 	}
 
@@ -233,35 +237,35 @@ static int ti_hercules_gcm_clock_init(const struct device *dev)
 #endif /* PLL2_NODE */
 
 #if IS_ENABLED(OSCIN_CLOCK_NODE)
-	sys_regs_1->CSDIS |= BIT(OSCILLATOR);
+	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_OSCILLATOR);
 #endif
 #if IS_ENABLED(PLL1_NODE)
-	sys_regs_1->CSDIS |= BIT(PLL1);
+	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_PLL1);
 #endif
 #if IS_ENABLED(EXT_CLKIN1_NODE)
-	sys_regs_1->CSDIS |= BIT(EXTCLKIN);
+	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_EXTCLKIN);
 #endif
 #if IS_ENABLED(LF_LPO_CLOCK_NODE)
-	sys_regs_1->CSDIS |= BIT(LF_LPO);
+	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_LF_LPO);
 #endif
 #if IS_ENABLED(HF_LPO_CLOCK_NODE)
-	sys_regs_1->CSDIS |= BIT(HF_LPO);
+	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_HF_LPO);
 #endif
 #if IS_ENABLED(PLL2_NODE)
-	sys_regs_1->CSDIS |= BIT(PLL2);
+	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_PLL2);
 #endif
 #if IS_ENABLED(EXT_CLKIN2_NODE)
-	sys_regs_1->CSDIS |= BIT(EXTCLKIN2);
+	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_EXTCLKIN2);
 #endif
 	return 0;
 }
 
-static const struct clock_control_driver_api ti_hercules_gcm_clock_api = {
-	.on = ti_hercules_gcm_clock_on,
-	.off = ti_hercules_gcm_clock_off,
-	.get_status = ti_hercules_gcm_clock_get_status,
-	.get_rate = ti_hercules_gcm_clock_get_rate,
-	.configure = ti_hercules_gcm_clock_configure};
+static DEVICE_API(clock_control,
+		  ti_hercules_gcm_clock_api) = {.on = ti_hercules_gcm_clock_on,
+						.off = ti_hercules_gcm_clock_off,
+						.get_status = ti_hercules_gcm_clock_get_status,
+						.get_rate = ti_hercules_gcm_clock_get_rate,
+						.configure = ti_hercules_gcm_clock_configure};
 
 DEVICE_DT_DEFINE(DT_NODELABEL(gcm), ti_hercules_gcm_clock_init, NULL, NULL, NULL, PRE_KERNEL_1,
 		 CONFIG_CLOCK_CONTROL_INIT_PRIORITY, &ti_hercules_gcm_clock_api);

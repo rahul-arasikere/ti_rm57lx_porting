@@ -12,7 +12,7 @@ description: |
 
 properties:
   '#clock-cells':
-    const: 2
+    const: 3
 
   bypass-on-pll-slip:
     type: boolean
@@ -41,4 +41,5 @@ properties:
 
 clock-cells:
   - clock-domain
+  - clock-source
   - flags
