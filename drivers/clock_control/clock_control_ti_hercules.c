@@ -285,38 +285,38 @@ static int ti_hercules_gcm_clock_init(const struct device *dev)
 	sys_regs_1->GBLSTAT = FBSLIP | RFSLIP | OSCFAIL;
 
 #if IS_ENABLED(PLL1_NODE)
-	uint32_t pll1_conf = 0;
-	pll1_conf |= DT_PROP_BY_IDX(PLL1_NODE, reset_on_pll_slip) << 31;
+	uint32_t pllctl1_conf = 0;
+	pllctl1_conf |= DT_PROP_BY_IDX(PLL1_NODE, reset_on_pll_slip) << 31;
 #if DT_PROP_BY_IDX(PLL1_NODE, bypass_on_pll_slip)
 	/* Enable Bypass on Slip*/
-	pll1_conf |= 0b11 << 29;
+	pllctl1_conf |= 0b11 << 29;
 #else
 	/* Disable Bypass on Slip */
-	pll1_conf |= 0x2 << 29;
+	pllctl1_conf |= 0x2 << 29;
 #endif /* Bypass-On-PLL-Slip */
 	BUILD_ASSERT(IN_RANGE(z_plldiv(PLL1_NODE), 1, 32), "R out of range! (1 -32)");
-	pll1_conf |= (z_plldiv(PLL1_NODE) - 1) << 24;
-	pll1_conf |= DT_PROP_BY_IDX(PLL1_NODE, reset_on_oscillator_fail) << 23;
+	pllctl1_conf |= (z_plldiv(PLL1_NODE) - 1) << 24;
+	pllctl1_conf |= DT_PROP_BY_IDX(PLL1_NODE, reset_on_oscillator_fail) << 23;
 	BUILD_ASSERT(IN_RANGE(z_refclkdiv(PLL1_NODE), 1, 64), "NR out of range! (1 - 64)");
-	pll1_conf |= (z_refclkdiv(PLL1_NODE) - 1) << 16;
+	pllctl1_conf |= (z_refclkdiv(PLL1_NODE) - 1) << 16;
 	BUILD_ASSERT(IN_RANGE(z_pllmul(PLL1_NODE), 1, 256), "NF out of range! (1 - 256)");
-	pll1_conf |= (z_pllmul(PLL1_NODE) - 1) << 8;
+	pllctl1_conf |= (z_pllmul(PLL1_NODE) - 1) << 8;
 
-	sys_regs_1->PLLCTL1 = pll1_conf;
+	sys_regs_1->PLLCTL1 = pllctl1_conf;
 
-	uint32_t pll2_conf = 0;
+	uint32_t pllctl2_conf = 0;
 #if FMENA
-	pll2_conf |= BIT(31);
+	pllctl2_conf |= BIT(31);
 	BUILD_ASSERT(IN_RANGE(z_pll1_spreadingrate(), 1, 512), "NS out of range! (1-512)");
-	pll2_conf |= (z_pll1_spreadingrate() - 1) << 22;
+	pllctl2_conf |= (z_pll1_spreadingrate() - 1) << 22;
 	BUILD_ASSERT(IN_RANGE(z_pll1_mulmod(), 8, 511), "MULMOD out of range! (8 - 511)");
-	pll2_conf |= z_pll1_mulmod() << 12;
+	pllctl2_conf |= z_pll1_mulmod() << 12;
 	BUILD_ASSERT(IN_RANGE(z_pll1_spreadingamount(), 1, 512), "NV out of range! (1 - 512)");
-	pll2_conf |= (z_pll1_spreadingamount() - 1);
+	pllctl2_conf |= (z_pll1_spreadingamount() - 1);
 #endif /* FMENA */
 	BUILD_ASSERT(IN_RANGE(z_odpll(PLL1_NODE), 1, 8), "OD out of range! (1 - 8)");
-	pll2_conf |= (z_odpll(PLL1_NODE) - 1) << 9;
-	sys_regs_1->PLLCTL2 = pll2_conf;
+	pllctl2_conf |= (z_odpll(PLL1_NODE) - 1) << 9;
+	sys_regs_1->PLLCTL2 = pllctl2_conf;
 #endif /* PLL1_NODE */
 
 #if IS_ENABLED(PLL2_NODE)
