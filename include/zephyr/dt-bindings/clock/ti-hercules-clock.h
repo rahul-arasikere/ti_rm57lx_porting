@@ -17,6 +17,7 @@
 #define CLOCK_SRC_VCLK          0x9U
 #define CLOCK_SRC_PLL2_ODCLK_8  0xEU
 #define CLOCK_SRC_PLL2_ODCLK_16 0xFU
+#define CLOCK_SRC_NONE          0x10U
 
 #define CLOCK_DOM_GCLK1   0x0U
 #define CLOCK_DOM_HCLK    0x1U
@@ -27,6 +28,7 @@
 #define CLOCK_DOM_RTICLK1 0x6U
 #define CLOCK_DOM_VCLK3   0x8U
 #define CLOCK_DOM_VCLKA4  0xBU
+#define CLOCK_DOM_NONE    0xCU
 
 #define CLOCK_ON_WAKEUP           0x2U
 #define CLOCK_ON_WAKEUP_GCLK1_OFF 0x1U
