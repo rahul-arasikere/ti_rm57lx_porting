@@ -272,6 +272,16 @@ static int ti_hercules_gcm_clock_get_rate(const struct device *dev, clock_contro
 		*rate = CLOCK_EXT_CLKIN2_FREQ;
 		break;
 
+	case CLOCK_SRC_PLL1:
+		*rate = ((CLOCK_OSCIN_FREQ / z_refclkdiv(PLL1_NODE)) * z_pllmul(PLL1_NODE)) /
+			z_odpll(PLL1_NODE) / z_plldiv(PLL1_NODE);
+		break;
+
+	case CLOCK_SRC_PLL2:
+		*rate = ((CLOCK_OSCIN_FREQ / z_refclkdiv(PLL2_NODE)) * z_pllmul(PLL2_NODE)) /
+			z_odpll(PLL2_NODE) / z_plldiv(PLL2_NODE);
+		break;
+
 	default:
 		return -EINVAL;
 	}
