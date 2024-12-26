@@ -238,7 +238,8 @@
                                           "rti_timebase1";
                         compatible = "ti,hercules-rti-timer";
                         interrupt-parent = <&vim>;
-                        clocks = <&gcm CLOCK_DOM_RTICLK1 CLOCK_SRC_DEFAULT 0>;
+                        clocks = <&gcm CLOCK_DOM_RTICLK1 CLOCK_SRC_VCLK 0>;
+                        clock-names = "";
                         status = "okay"; /* the system clock timer is mandatory */
                 };
         };

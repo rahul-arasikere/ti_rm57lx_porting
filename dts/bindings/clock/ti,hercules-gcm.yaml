@@ -42,4 +42,4 @@ properties:
 clock-cells:
   - clock-domain
   - clock-source
-  - flags
+  - clock-mode

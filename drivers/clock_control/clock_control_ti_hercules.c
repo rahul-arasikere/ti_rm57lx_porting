@@ -11,6 +11,8 @@
 #include <zephyr/device.h>
 #include <zephyr/sys/util.h>
 
+#include <errno.h>
+
 #define CLOCKS_NODE       DT_NODELABEL(clocks)
 #define OSCIN_CLOCK_NODE  DT_CHILD(CLOCKS_NODE, oscin)
 #define EXT_CLKIN1_NODE   DT_CHILD(CLOCKS_NODE, ext_clkin1)
@@ -19,6 +21,7 @@
 #define PLL2_NODE         DT_CHILD(CLOCKS_NODE, pll2)
 #define LF_LPO_CLOCK_NODE DT_CHILD(CLOCKS_NODE, lf_lpo)
 #define HF_LPO_CLOCK_NODE DT_CHILD(CLOCKS_NODE, hf_lpo)
+#define GCM_NODE          DT_NODELABEL(gcm)
 
 /* Helper Macro Functions */
 #define z_plldiv(x)    DT_PROP_BY_IDX(x, r)
@@ -120,16 +123,11 @@ static uint32_t _errata_SSWF021_45_both_plls(uint32_t count)
 	}
 	return fail_code;
 }
-
-struct ti_hercules_gcm_clock_config {
-	uint8_t source;
-	uint8_t domain;
-};
-
 struct ti_herc_periph_clk {
 	uint8_t domain;
 	uint8_t source;
-	int flags;
+	uint8_t clock_mode;
+	uint8_t arg; /* divider argument (optional) */
 };
 
 struct ti_hercules_gcm_clock_data {
@@ -137,7 +135,67 @@ struct ti_hercules_gcm_clock_data {
 
 static int ti_hercules_gcm_clock_on(const struct device *dev, clock_control_subsys_t sys)
 {
+	static struct ti_herc_periph_clk vclk_sys = {
+		.source = CLOCK_SRC_VCLK,
+	};
+	volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
+	volatile struct hercules_syscon_2_regs *sys_regs_2 = (void *)DT_REG_ADDR(SYS2_NODE);
 	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
+	uint32_t vclk_rate, src_clk_rate;
+	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
+		/* Invalid source for input */
+		return -EINVAL;
+	}
+	if (!IN_RANGE(periph_clk->clock_mode, CLOCK_ON_NORMAL, CLOCK_ON_WAKEUP_GCLK1_OFF)) {
+		return -EINVAL;
+	}
+	switch (periph_clk->domain) {
+	case CLOCK_DOM_GCLK1:
+	case CLOCK_DOM_HCLK:
+	case CLOCK_DOM_VCLK:
+	case CLOCK_DOM_VCLK2:
+	case CLOCK_DOM_VCLK3:
+		/* All the above domains use the same source for clocks */
+		sys_regs_1->GHVSRC |= (0xF & periph_clk->source) << (8 * periph_clk->clock_mode);
+		break;
+	case CLOCK_DOM_VCLKA1:
+		sys_regs_1->VCLKASRC |= (0xF & periph_clk->source);
+		break;
+
+	case CLOCK_DOM_VCLKA2:
+		sys_regs_1->VCLKASRC |= (0xF & periph_clk->source) << 8;
+		break;
+	case CLOCK_DOM_VCLKA4:
+		sys_regs_2->VCLKACON1 |= (0xF & periph_clk->source) | periph_clk->arg;
+		break;
+	case CLOCK_DOM_RTICLK1:
+		if (!IN_RANGE(periph_clk->arg, RTICLK_DIV_1, RTICLK_DIV_8)) {
+			return -EINVAL;
+		}
+		if (periph_clk->source != CLOCK_SRC_VCLK) {
+			if (!clock_control_get_rate(DEVICE_DT_GET(GCM_NODE), sys, &src_clk_rate)) {
+				return -EINVAL;
+			}
+			if (!clock_control_get_rate(DEVICE_DT_GET(GCM_NODE),
+						    (clock_control_subsys_t)&vclk_sys,
+						    &vclk_rate)) {
+				return -EINVAL;
+			}
+			if (src_clk_rate < vclk_rate / (1 << periph_clk->arg)) {
+				return -EINVAL;
+			}
+		}
+		sys_regs_1->RCLKSRC = ((1 << periph_clk->arg) << 8) /* Set divider */
+				      | (0xF & periph_clk->source); /* set source */
+
+		break;
+	default:
+		return -EINVAL;
+	}
+	/* enable clock source if not enabled */
+	sys_regs_1->CSDIS |= BIT(periph_clk->source);
+	/* enable clock domain if not enabled */
+	sys_regs_1->CDDIS &= ~BIT(periph_clk->domain);
 	return 0;
 }
 
@@ -224,16 +282,16 @@ static int ti_hercules_gcm_clock_init(const struct device *dev)
 #endif /* PLL1_NODE */
 
 #if IS_ENABLED(PLL2_NODE)
-	uint32_t pll3_conf = 0;
+	uint32_t pllctl3_conf = 0;
 	BUILD_ASSERT(IN_RANGE(z_odpll(PLL2_NODE), 1, 8), "OD out of range! (1 - 8)");
-	pll3_conf |= (z_odpll(PLL2_NODE) - 1) << 29;
+	pllctl3_conf |= (z_odpll(PLL2_NODE) - 1) << 29;
 	BUILD_ASSERT(IN_RANGE(z_plldiv(PLL2_NODE), 1, 32), "R out of range! (1 -32)");
-	pll3_conf |= (z_plldiv(PLL2_NODE) - 1) << 24;
+	pllctl3_conf |= (z_plldiv(PLL2_NODE) - 1) << 24;
 	BUILD_ASSERT(IN_RANGE(z_refclkdiv(PLL2_NODE), 1, 64), "NR out of range! (1 - 64)");
-	pll3_conf |= (z_refclkdiv(PLL2_NODE) - 1) << 16;
+	pllctl3_conf |= (z_refclkdiv(PLL2_NODE) - 1) << 16;
 	BUILD_ASSERT(IN_RANGE(z_pllmul(PLL2_NODE), 1, 256), "NF out of range! (1 - 256)");
-	pll3_conf |= (z_pllmul(PLL2_NODE) - 1) << 8;
-	sys_regs_2->PLLCTL3 = pll3_conf;
+	pllctl3_conf |= (z_pllmul(PLL2_NODE) - 1) << 8;
+	sys_regs_2->PLLCTL3 = pllctl3_conf;
 #endif /* PLL2_NODE */
 
 #if IS_ENABLED(OSCIN_CLOCK_NODE)
