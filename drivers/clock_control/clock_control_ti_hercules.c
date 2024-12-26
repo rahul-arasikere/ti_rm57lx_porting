@@ -43,6 +43,11 @@
 #define PENA             BIT(8)
 #define ESM_SRx_PLLxSLIP BIT(10)
 
+/* Fixed clock frequencies */
+#define CLOCK_OSCIN_FREQ      DT_PROP_BY_IDX(OSCIN_CLOCK_NODE, clock_frequency)
+#define CLOCK_EXT_CLKIN1_FREQ DT_PROP_BY_IDX(EXT_CLKIN1_NODE, clock_frequency)
+#define CLOCK_EXT_CLKIN2_FREQ DT_PROP_BY_IDX(EXT_CLKIN2_NODE, clock_frequency)
+
 static uint32_t _errata_disable_plls(uint32_t plls)
 {
 	uint32_t timeout = 0x10, fail_code = 0;
@@ -254,6 +259,22 @@ static int ti_hercules_gcm_clock_get_rate(const struct device *dev, clock_contro
 {
 	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
 	*rate = 0;
+	switch (periph_clk->source) {
+	case CLOCK_SRC_OSCILLATOR:
+		*rate = CLOCK_OSCIN_FREQ;
+		break;
+
+	case CLOCK_SRC_EXTCLKIN:
+		*rate = CLOCK_EXT_CLKIN1_FREQ;
+		break;
+
+	case CLOCK_SRC_EXTCLKIN2:
+		*rate = CLOCK_EXT_CLKIN2_FREQ;
+		break;
+
+	default:
+		return -EINVAL;
+	}
 	return 0;
 }
 
