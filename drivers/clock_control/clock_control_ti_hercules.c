@@ -223,10 +223,12 @@ static enum clock_control_status ti_hercules_gcm_clock_get_status(const struct d
 	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
 	uint32_t csv_stat = 0;
 	uint32_t csdis_val = 0;
+	uint32_t cddis_val = 0;
 	/* Only clock source status is checked */
-	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
-		return -EINVAL;
-	} else {
+	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2) &&
+	    !IN_RANGE(periph_clk->domain, CLOCK_DOM_GCLK1, CLOCK_DOM_VCLKA4)) {
+		return CLOCK_CONTROL_STATUS_UNKNOWN;
+	} else if (IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
 		sys_read32(sys_regs_1->CSVSTAT, &csv_stat);
 		sys_read32(sys_regs_1->CSDIS, &csdis_val);
 		csv_stat = FIELD_GET(BIT(periph_clk->source), csv_stat);
@@ -240,6 +242,10 @@ static enum clock_control_status ti_hercules_gcm_clock_get_status(const struct d
 		} else {
 			return CLOCK_CONTROL_STATUS_UNKNOWN;
 		}
+	} else {
+		sys_read32(sys_regs_1->CDDIS, &cddis_val);
+		cddis_val = FIELD_GET(BIT(periph_clk->domain), cddis_val);
+		return (cddis_val) ? CLOCK_CONTROL_STATUS_OFF : CLOCK_CONTROL_STATUS_ON;
 	}
 }
 
