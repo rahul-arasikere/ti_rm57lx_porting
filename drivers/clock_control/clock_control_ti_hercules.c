@@ -219,7 +219,28 @@ static int ti_hercules_gcm_clock_off(const struct device *dev, clock_control_sub
 static enum clock_control_status ti_hercules_gcm_clock_get_status(const struct device *dev,
 								  clock_control_subsys_t sys)
 {
-	return CLOCK_CONTROL_STATUS_ON;
+	volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
+	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
+	uint32_t csv_stat = 0;
+	uint32_t csdis_val = 0;
+	/* Only clock source status is checked */
+	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
+		return -EINVAL;
+	} else {
+		sys_read32(sys_regs_1->CSVSTAT, &csv_stat);
+		sys_read32(sys_regs_1->CSDIS, &csdis_val);
+		csv_stat = FIELD_GET(BIT(periph_clk->source), csv_stat);
+		csdis_val = FIELD_GET(BIT(periph_clk->source), csdis_val);
+		if (csdis_val) {
+			return CLOCK_CONTROL_STATUS_OFF;
+		} else if (csv_stat) {
+			return CLOCK_CONTROL_STATUS_ON;
+		} else if (!csdis_val) {
+			return CLOCK_CONTROL_STATUS_STARTING;
+		} else {
+			return CLOCK_CONTROL_STATUS_UNKNOWN;
+		}
+	}
 }
 
 static int ti_hercules_gcm_clock_get_rate(const struct device *dev, clock_control_subsys_t sys,
