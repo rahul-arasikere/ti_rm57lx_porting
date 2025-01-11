@@ -140,13 +140,20 @@ struct ti_hercules_gcm_clock_data {
 
 static int ti_hercules_gcm_clock_on(const struct device *dev, clock_control_subsys_t sys)
 {
-	if (!IN_RANGE()) {
-		volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
+	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
+	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2) &&
+	    !IN_RANGE(periph_clk->domain, CLOCK_DOM_GCLK1, CLOCK_DOM_VCLKA4)) {
+		return -EINVAL;
 	}
-	/* enable clock source if not enabled */
-	sys_regs_1->CSDIS |= BIT(periph_clk->source);
-	/* enable clock domain if not enabled */
-	sys_regs_1->CDDIS &= ~BIT(periph_clk->domain);
+	volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
+	if (IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
+		/* enable clock source if not enabled */
+		sys_regs_1->CSDIS |= BIT(periph_clk->source);
+	}
+	if (IN_RANGE(periph_clk->domain, CLOCK_DOM_GCLK1, CLOCK_DOM_VCLKA4)) {
+		/* enable clock domain if not enabled */
+		sys_regs_1->CDDIS &= ~BIT(periph_clk->domain);
+	}
 	return 0;
 }
 
