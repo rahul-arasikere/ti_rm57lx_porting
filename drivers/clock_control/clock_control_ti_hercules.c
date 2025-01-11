@@ -140,62 +140,8 @@ struct ti_hercules_gcm_clock_data {
 
 static int ti_hercules_gcm_clock_on(const struct device *dev, clock_control_subsys_t sys)
 {
-	static struct ti_herc_periph_clk vclk_sys = {
-		.source = CLOCK_SRC_VCLK,
-	};
-	volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
-	volatile struct hercules_syscon_2_regs *sys_regs_2 = (void *)DT_REG_ADDR(SYS2_NODE);
-	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
-	uint32_t vclk_rate, src_clk_rate;
-	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
-		/* Invalid source for input */
-		return -EINVAL;
-	}
-	if (!IN_RANGE(periph_clk->clock_mode, CLOCK_ON_NORMAL, CLOCK_ON_WAKEUP_GCLK1_OFF)) {
-		return -EINVAL;
-	}
-	switch (periph_clk->domain) {
-	case CLOCK_DOM_GCLK1:
-	case CLOCK_DOM_HCLK:
-	case CLOCK_DOM_VCLK:
-	case CLOCK_DOM_VCLK2:
-	case CLOCK_DOM_VCLK3:
-		/* All the above domains use the same source for clocks */
-		sys_regs_1->GHVSRC |= (0xF & periph_clk->source) << (8 * periph_clk->clock_mode);
-		break;
-	case CLOCK_DOM_VCLKA1:
-		sys_regs_1->VCLKASRC |= (0xF & periph_clk->source);
-		break;
-
-	case CLOCK_DOM_VCLKA2:
-		sys_regs_1->VCLKASRC |= (0xF & periph_clk->source) << 8;
-		break;
-	case CLOCK_DOM_VCLKA4:
-		sys_regs_2->VCLKACON1 |= (0xF & periph_clk->source) | periph_clk->arg;
-		break;
-	case CLOCK_DOM_RTICLK1:
-		if (!IN_RANGE(periph_clk->arg, RTICLK_DIV_1, RTICLK_DIV_8)) {
-			return -EINVAL;
-		}
-		if (periph_clk->source != CLOCK_SRC_VCLK) {
-			if (!clock_control_get_rate(DEVICE_DT_GET(GCM_NODE), sys, &src_clk_rate)) {
-				return -EINVAL;
-			}
-			if (!clock_control_get_rate(DEVICE_DT_GET(GCM_NODE),
-						    (clock_control_subsys_t)&vclk_sys,
-						    &vclk_rate)) {
-				return -EINVAL;
-			}
-			if (src_clk_rate < vclk_rate / (1 << periph_clk->arg)) {
-				return -EINVAL;
-			}
-		}
-		sys_regs_1->RCLKSRC = ((1 << periph_clk->arg) << 8) /* Set divider */
-				      | (0xF & periph_clk->source); /* set source */
-
-		break;
-	default:
-		return -EINVAL;
+	if (!IN_RANGE()) {
+		volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
 	}
 	/* enable clock source if not enabled */
 	sys_regs_1->CSDIS |= BIT(periph_clk->source);
@@ -206,6 +152,7 @@ static int ti_hercules_gcm_clock_on(const struct device *dev, clock_control_subs
 
 static int ti_hercules_gcm_clock_off(const struct device *dev, clock_control_subsys_t sys)
 {
+
 	volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
 	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
 	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2) &&
@@ -291,7 +238,65 @@ static int ti_hercules_gcm_clock_get_rate(const struct device *dev, clock_contro
 static int ti_hercules_gcm_clock_configure(const struct device *dev, clock_control_subsys_t sys,
 					   void *data)
 {
+	ARG_UNUSED(data);
+	static struct ti_herc_periph_clk vclk_sys = {
+		.source = CLOCK_SRC_VCLK,
+	};
 	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
+	volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
+	volatile struct hercules_syscon_2_regs *sys_regs_2 = (void *)DT_REG_ADDR(SYS2_NODE);
+	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
+	uint32_t vclk_rate, src_clk_rate;
+	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
+		/* Invalid source for input */
+		return -EINVAL;
+	}
+	if (!IN_RANGE(periph_clk->clock_mode, CLOCK_ON_NORMAL, CLOCK_ON_WAKEUP_GCLK1_OFF)) {
+		return -EINVAL;
+	}
+	switch (periph_clk->domain) {
+	case CLOCK_DOM_GCLK1:
+	case CLOCK_DOM_HCLK:
+	case CLOCK_DOM_VCLK:
+	case CLOCK_DOM_VCLK2:
+	case CLOCK_DOM_VCLK3:
+		/* All the above domains use the same source for clocks */
+		sys_regs_1->GHVSRC |= (0xF & periph_clk->source) << (8 * periph_clk->clock_mode);
+		break;
+	case CLOCK_DOM_VCLKA1:
+		sys_regs_1->VCLKASRC |= (0xF & periph_clk->source);
+		break;
+
+	case CLOCK_DOM_VCLKA2:
+		sys_regs_1->VCLKASRC |= (0xF & periph_clk->source) << 8;
+		break;
+	case CLOCK_DOM_VCLKA4:
+		sys_regs_2->VCLKACON1 |= (0xF & periph_clk->source) | periph_clk->arg;
+		break;
+	case CLOCK_DOM_RTICLK1:
+		if (!IN_RANGE(periph_clk->arg, RTICLK_DIV_1, RTICLK_DIV_8)) {
+			return -EINVAL;
+		}
+		if (periph_clk->source != CLOCK_SRC_VCLK) {
+			if (!clock_control_get_rate(DEVICE_DT_GET(GCM_NODE), sys, &src_clk_rate)) {
+				return -EINVAL;
+			}
+			if (!clock_control_get_rate(DEVICE_DT_GET(GCM_NODE),
+						    (clock_control_subsys_t)&vclk_sys,
+						    &vclk_rate)) {
+				return -EINVAL;
+			}
+			if (src_clk_rate < vclk_rate / (1 << periph_clk->arg)) {
+				return -EINVAL;
+			}
+		}
+		sys_regs_1->RCLKSRC = ((1 << periph_clk->arg) << 8) /* Set divider */
+				      | (0xF & periph_clk->source); /* set source */
+
+		break;
+	default:
+		return -EINVAL;
+	}
 	return 0;
 }
 
