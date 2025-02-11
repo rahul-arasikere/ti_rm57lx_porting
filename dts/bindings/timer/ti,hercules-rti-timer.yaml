@@ -1,0 +1,25 @@
+# Copyrights (c) 2025 Rahul Arasikere <arasikere.rahul@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  TI Hercules Real Time Interrupt (RTI) Driver
+
+  The real-time interrupt (RTI) module provides timer functionality
+  for operating systems and for benchmarking code. The RTI module can
+  incorporate several counters that define the timebases needed
+  for scheduling in the operating system.
+
+compatible: "ti,hercules-rti-timer"
+
+include: [base.yaml]
+
+properties:
+  rti-clk-divider:
+    type: int
+    default: 0
+    enum:
+      - 0
+      - 1
+      - 2
+      - 3
+    description: RTI clock divider.

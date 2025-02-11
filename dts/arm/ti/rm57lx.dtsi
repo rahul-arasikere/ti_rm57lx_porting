@@ -223,12 +223,12 @@
                 rti: rti@fffffc00 {
                         reg = <0xfffffc00 0xbc>;
                         interrupts = <SYS_FIQ 2 2 0
-                        SYS_FIQ 3 3 0
-                        SYS_FIQ 4 4 0
-                        SYS_FIQ 5 5 0
-                        SYS_FIQ 6 6 0
-                        SYS_FIQ 7 7 0
-                        SYS_FIQ 8 8 0>;
+                                      SYS_FIQ 3 3 0
+                                      SYS_FIQ 4 4 0
+                                      SYS_FIQ 5 5 0
+                                      SYS_FIQ 6 6 0
+                                      SYS_FIQ 7 7 0
+                                      SYS_FIQ 8 8 0>;
                         interrupt-names = "rti0",
                                           "rti1",
                                           "rti2",
@@ -239,7 +239,8 @@
                         compatible = "ti,hercules-rti-timer";
                         interrupt-parent = <&vim>;
                         clocks = <&gcm CLOCK_DOM_RTICLK1 CLOCK_SRC_VCLK 0>;
-                        clock-names = "";
+                        clock-names = "rticlk";
+                        rti-clk-divider = <0>;
                         status = "okay"; /* the system clock timer is mandatory */
                 };
         };

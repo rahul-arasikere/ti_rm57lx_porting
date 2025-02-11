@@ -3,4 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT ti_hercules_rti
+#include <zephyr/device.h>
+#include <zephyr/kernel.h>
+#include <soc.h>
+
+#define DT_DRV_COMPAT ti_hercules_rti_timer
