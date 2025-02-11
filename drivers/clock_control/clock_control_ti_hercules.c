@@ -24,17 +24,17 @@
 #define GCM_NODE          DT_NODELABEL(gcm)
 
 /* Helper Macro Functions */
-#define z_plldiv(x)    DT_PROP_BY_IDX(x, r)
-#define z_refclkdiv(x) DT_PROP_BY_IDX(x, nr)
-#define z_pllmul(x)    DT_PROP_BY_IDX(x, nf)
-#define z_odpll(x)     DT_PROP_BY_IDX(x, od)
+#define z_plldiv(x)    DT_PROP(x, r)
+#define z_refclkdiv(x) DT_PROP(x, nr)
+#define z_pllmul(x)    DT_PROP(x, nf)
+#define z_odpll(x)     DT_PROP(x, od)
 
 /* Check whether frequency modulation is enabled. */
-#define FMENA DT_PROP_BY_IDX(CLOCKS_NODE, enable_freq_modulation)
+#define FMENA DT_PROP(CLOCKS_NODE, enable_freq_modulation)
 
-#define z_pll1_mulmod()          DT_PROP_BY_IDX(PLL1_NODE, mulmod)
-#define z_pll1_spreadingrate()   DT_PROP_BY_IDX(PLL1_NODE, ns)
-#define z_pll1_spreadingamount() DT_PROP_BY_IDX(PLL1_NODE, nv)
+#define z_pll1_mulmod()          DT_PROP(PLL1_NODE, mulmod)
+#define z_pll1_spreadingrate()   DT_PROP(PLL1_NODE, ns)
+#define z_pll1_spreadingamount() DT_PROP(PLL1_NODE, nv)
 
 #define FBSLIP  BIT(9)
 #define RFSLIP  BIT(8)
@@ -44,9 +44,9 @@
 #define ESM_SRx_PLLxSLIP BIT(10)
 
 /* Fixed clock frequencies */
-#define CLOCK_OSCIN_FREQ      DT_PROP_BY_IDX(OSCIN_CLOCK_NODE, clock_frequency)
-#define CLOCK_EXT_CLKIN1_FREQ DT_PROP_BY_IDX(EXT_CLKIN1_NODE, clock_frequency)
-#define CLOCK_EXT_CLKIN2_FREQ DT_PROP_BY_IDX(EXT_CLKIN2_NODE, clock_frequency)
+#define CLOCK_OSCIN_FREQ      DT_PROP(OSCIN_CLOCK_NODE, clock_frequency)
+#define CLOCK_EXT_CLKIN1_FREQ DT_PROP(EXT_CLKIN1_NODE, clock_frequency)
+#define CLOCK_EXT_CLKIN2_FREQ DT_PROP(EXT_CLKIN2_NODE, clock_frequency)
 
 static uint32_t _errata_disable_plls(uint32_t plls)
 {
@@ -196,8 +196,8 @@ static enum clock_control_status ti_hercules_gcm_clock_get_status(const struct d
 			return CLOCK_CONTROL_STATUS_OFF;
 		} else if (csv_stat) {
 			return CLOCK_CONTROL_STATUS_ON;
-		} else if (!csdis_val) {
-			return CLOCK_CONTROL_STATUS_STARTING;
+			// } else if (!csdis_val) { // Need to rethink this
+			// 	return CLOCK_CONTROL_STATUS_STARTING;
 		} else {
 			return CLOCK_CONTROL_STATUS_UNKNOWN;
 		}
@@ -214,27 +214,37 @@ static int ti_hercules_gcm_clock_get_rate(const struct device *dev, clock_contro
 	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
 	*rate = 0;
 	switch (periph_clk->source) {
+#if DT_NODE_HAS_STATUS_OKAY(OSCIN_CLOCK_NODE)
 	case CLOCK_SRC_OSCILLATOR:
 		*rate = CLOCK_OSCIN_FREQ;
 		break;
+#endif
 
+#if DT_NODE_HAS_STATUS_OKAY(EXT_CLKIN1_NODE)
 	case CLOCK_SRC_EXTCLKIN:
 		*rate = CLOCK_EXT_CLKIN1_FREQ;
 		break;
+#endif
 
+#if DT_NODE_HAS_STATUS_OKAY(EXT_CLKIN2_NODE)
 	case CLOCK_SRC_EXTCLKIN2:
 		*rate = CLOCK_EXT_CLKIN2_FREQ;
 		break;
+#endif
 
+#if DT_NODE_HAS_STATUS_OKAY(PLL1_NODE)
 	case CLOCK_SRC_PLL1:
 		*rate = ((CLOCK_OSCIN_FREQ / z_refclkdiv(PLL1_NODE)) * z_pllmul(PLL1_NODE)) /
 			z_odpll(PLL1_NODE) / z_plldiv(PLL1_NODE);
 		break;
+#endif
 
+#if DT_NODE_HAS_STATUS_OKAY(PLL2_NODE)
 	case CLOCK_SRC_PLL2:
 		*rate = ((CLOCK_OSCIN_FREQ / z_refclkdiv(PLL2_NODE)) * z_pllmul(PLL2_NODE)) /
 			z_odpll(PLL2_NODE) / z_plldiv(PLL2_NODE);
 		break;
+#endif
 
 	default:
 		return -EINVAL;
@@ -252,7 +262,6 @@ static int ti_hercules_gcm_clock_configure(const struct device *dev, clock_contr
 	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
 	volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
 	volatile struct hercules_syscon_2_regs *sys_regs_2 = (void *)DT_REG_ADDR(SYS2_NODE);
-	struct ti_herc_periph_clk *periph_clk = (struct ti_herc_periph_clk *)sys;
 	uint32_t vclk_rate, src_clk_rate;
 	if (!IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
 		/* Invalid source for input */
@@ -327,10 +336,10 @@ static int ti_hercules_gcm_clock_init(const struct device *dev)
 	/* Clear Global Status Flags */
 	sys_regs_1->GBLSTAT = FBSLIP | RFSLIP | OSCFAIL;
 
-#if IS_ENABLED(PLL1_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(PLL1_NODE)
 	uint32_t pllctl1_conf = 0;
-	pllctl1_conf |= DT_PROP_BY_IDX(PLL1_NODE, reset_on_pll_slip) << 31;
-#if DT_PROP_BY_IDX(PLL1_NODE, bypass_on_pll_slip)
+	pllctl1_conf |= DT_PROP(PLL1_NODE, reset_on_pll_slip) << 31;
+#if DT_PROP(PLL1_NODE, bypass_on_pll_slip)
 	/* Enable Bypass on Slip*/
 	pllctl1_conf |= 0b11 << 29;
 #else
@@ -362,7 +371,7 @@ static int ti_hercules_gcm_clock_init(const struct device *dev)
 	sys_regs_1->PLLCTL2 = pllctl2_conf;
 #endif /* PLL1_NODE */
 
-#if IS_ENABLED(PLL2_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(PLL2_NODE)
 	uint32_t pllctl3_conf = 0;
 	BUILD_ASSERT(IN_RANGE(z_odpll(PLL2_NODE), 1, 8), "OD out of range! (1 - 8)");
 	pllctl3_conf |= (z_odpll(PLL2_NODE) - 1) << 29;
@@ -375,25 +384,25 @@ static int ti_hercules_gcm_clock_init(const struct device *dev)
 	sys_regs_2->PLLCTL3 = pllctl3_conf;
 #endif /* PLL2_NODE */
 
-#if IS_ENABLED(OSCIN_CLOCK_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(OSCIN_CLOCK_NODE)
 	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_OSCILLATOR);
 #endif
-#if IS_ENABLED(PLL1_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(PLL1_NODE)
 	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_PLL1);
 #endif
-#if IS_ENABLED(EXT_CLKIN1_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(EXT_CLKIN1_NODE)
 	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_EXTCLKIN);
 #endif
-#if IS_ENABLED(LF_LPO_CLOCK_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(LF_LPO_CLOCK_NODE)
 	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_LF_LPO);
 #endif
-#if IS_ENABLED(HF_LPO_CLOCK_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(HF_LPO_CLOCK_NODE)
 	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_HF_LPO);
 #endif
-#if IS_ENABLED(PLL2_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(PLL2_NODE)
 	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_PLL2);
 #endif
-#if IS_ENABLED(EXT_CLKIN2_NODE)
+#if DT_NODE_HAS_STATUS_OKAY(EXT_CLKIN2_NODE)
 	sys_regs_1->CSDIS |= BIT(CLOCK_SRC_EXTCLKIN2);
 #endif
 	return 0;
