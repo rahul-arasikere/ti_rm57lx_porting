@@ -9,8 +9,8 @@
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/dt-bindings/clock/ti-hercules-clock.h>
 #include <zephyr/device.h>
+#include <zephyr/sys/sys_io.h>
 #include <zephyr/sys/util.h>
-
 #include <errno.h>
 
 #define CLOCKS_NODE       DT_NODELABEL(clocks)
@@ -42,7 +42,6 @@
 
 #define PENA             BIT(8)
 #define ESM_SRx_PLLxSLIP BIT(10)
-
 /* Fixed clock frequencies */
 #define CLOCK_OSCIN_FREQ      DT_PROP(OSCIN_CLOCK_NODE, clock_frequency)
 #define CLOCK_EXT_CLKIN1_FREQ DT_PROP(EXT_CLKIN1_NODE, clock_frequency)
@@ -188,8 +187,8 @@ static enum clock_control_status ti_hercules_gcm_clock_get_status(const struct d
 	    !IN_RANGE(periph_clk->domain, CLOCK_DOM_GCLK1, CLOCK_DOM_VCLKA4)) {
 		return CLOCK_CONTROL_STATUS_UNKNOWN;
 	} else if (IN_RANGE(periph_clk->source, CLOCK_SRC_OSCILLATOR, CLOCK_SRC_EXTCLKIN2)) {
-		sys_read32(sys_regs_1->CSVSTAT, &csv_stat);
-		sys_read32(sys_regs_1->CSDIS, &csdis_val);
+		sys_regs_1->CSVSTAT = csv_stat;
+		sys_regs_1->CSDIS = csdis_val;
 		csv_stat = FIELD_GET(BIT(periph_clk->source), csv_stat);
 		csdis_val = FIELD_GET(BIT(periph_clk->source), csdis_val);
 		if (csdis_val) {
@@ -202,7 +201,7 @@ static enum clock_control_status ti_hercules_gcm_clock_get_status(const struct d
 			return CLOCK_CONTROL_STATUS_UNKNOWN;
 		}
 	} else {
-		sys_read32(sys_regs_1->CDDIS, &cddis_val);
+		sys_regs_1->CDDIS = cddis_val;
 		cddis_val = FIELD_GET(BIT(periph_clk->domain), cddis_val);
 		return (cddis_val) ? CLOCK_CONTROL_STATUS_OFF : CLOCK_CONTROL_STATUS_ON;
 	}
