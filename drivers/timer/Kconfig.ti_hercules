@@ -6,7 +6,7 @@ config TIMER_TI_HERCULES
         default y
         depends on SOC_FAMILY_TI_HERCULES
         depends on DT_HAS_TI_HERCULES_RTI_TIMER_ENABLED
-	depends on CLOCK_CONTROL && PM
+	depends on CLOCK_CONTROL
 	select TICKLESS_CAPABLE
         select TIMER_HAS_64BIT_CYCLE_COUNTER
         help

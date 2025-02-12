@@ -8,7 +8,7 @@
 
 void z_arm_platform_init(void)
 {
-	uint32_t reset_cause;
+	uint32_t reset_cause = 0;
 	volatile struct hercules_syscon_1_regs *sys_regs_1 = (void *)DT_REG_ADDR(SYS1_NODE);
 	__ASSERT_NO_MSG(hwinfo_get_reset_cause(&reset_cause) == 0);
 	if ((reset_cause & RESET_POR) ^ (reset_cause & RESET_HARDWARE)) {
