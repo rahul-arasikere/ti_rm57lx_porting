@@ -6,4 +6,4 @@ add_subdirectory(interrupt_controller)
 # Out-of-tree drivers for existing driver classes
 add_subdirectory_ifdef(CONFIG_CLOCK_CONTROL clock_control)
 add_subdirectory_ifdef(CONFIG_HWINFO hwinfo)
-add_subdirectory_ifdef(CONFIG_TIMER timer)
+add_subdirectory_ifdef(CONFIG_SYS_CLOCK_EXISTS timer)

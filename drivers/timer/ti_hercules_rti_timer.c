@@ -20,10 +20,6 @@ static void rti_irq_handler(const struct device *dev) {
 
 };
 
-void sys_clock_announce(int32_t ticks)
-{
-}
-
 uint32_t sys_clock_elapsed(void)
 {
 	return 0;
