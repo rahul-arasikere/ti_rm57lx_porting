@@ -242,6 +242,38 @@
                         clock-names = "rticlk";
                         rti-clk-divider = <0>;
                         status = "okay"; /* the system clock timer is mandatory */
+
+                        wdg0: watchdog@0 {
+                                compatible = "ti,hercules-rti-wdt";
+                                reg = <>;
+                                interrupts = <SYS_FIQ 9 9 0>;
+                                interrupt-parent = <&vim>;
+                                status = "disabled";
+                        };
+
+                        counter0: counter@0 {
+                                compatible = "ti,hercules-rti-counter";
+                                reg = <>;
+                                status = "disabled";
+                        };
+
+                        counter1: counter@1 {
+                                compatible = "ti,hercules-rti-counter";
+                                reg = <>;
+                                status = "disabled";
+                        };
+
+                        counter2: counter@2 {
+                                compatible = "ti,hercules-rti-counter";
+                                reg = <>;
+                                status = "disabled";
+                        };
+
+                        counter3: counter@3 {
+                                compatible = "ti,hercules-rti-counter";
+                                reg = <>;
+                                status = "disabled";
+                        };
                 };
         };
 };
