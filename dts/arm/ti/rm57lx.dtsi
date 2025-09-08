@@ -134,7 +134,7 @@
                         #size-cells = <1>;
 
                         gioa: gpio@fff7bc34 {
-                                reg = <0xfff7bc43 0x20>;
+                                reg = <0xfff7bc34 0x20>;
                                 compatible = "ti,hercules-gio";
                         };
 
@@ -236,44 +236,29 @@
                                           "rti_overflow0",
                                           "rti_overflow1",
                                           "rti_timebase1";
-                        compatible = "ti,hercules-rti-timer";
+                        compatible = "ti,hercules-rti-sysclock";
                         interrupt-parent = <&vim>;
-                        clocks = <&gcm CLOCK_DOM_RTICLK1 CLOCK_SRC_VCLK 0>;
+                        clocks = <&gcm CLOCK_DOM_RTICLK1 CLOCK_SRC_VCLK RTICLK_DIV_1>;
                         clock-names = "rticlk";
-                        rti-clk-divider = <0>;
-                        status = "okay"; /* the system clock timer is mandatory */
+                        clock-frequency = <DT_FREQ_M(75)>;
+                        status = "okay";
 
-                        wdg0: watchdog@0 {
-                                compatible = "ti,hercules-rti-wdt";
-                                reg = <>;
-                                interrupts = <SYS_FIQ 9 9 0>;
-                                interrupt-parent = <&vim>;
-                                status = "disabled";
-                        };
+                        // counter0: counter@0 {
+                        //         /* counter 0 provides tick source for systimer */
+                        //         status = "okay";
+                        // };
 
-                        counter0: counter@0 {
-                                compatible = "ti,hercules-rti-counter";
-                                reg = <>;
-                                status = "disabled";
-                        };
+                        // counter1: counter@1 {
+                        //         status = "disabled";
+                        // };
 
-                        counter1: counter@1 {
-                                compatible = "ti,hercules-rti-counter";
-                                reg = <>;
-                                status = "disabled";
-                        };
-
-                        counter2: counter@2 {
-                                compatible = "ti,hercules-rti-counter";
-                                reg = <>;
-                                status = "disabled";
-                        };
-
-                        counter3: counter@3 {
-                                compatible = "ti,hercules-rti-counter";
-                                reg = <>;
-                                status = "disabled";
-                        };
+                        // wdg0: watchdog@0 {
+                        //         compatible = "ti,hercules-rti-wdt";
+                        //         reg = <>;
+                        //         interrupts = <SYS_FIQ 9 9 0>;
+                        //         interrupt-parent = <&vim>;
+                        //         status = "disabled";
+                        // };
                 };
         };
 };

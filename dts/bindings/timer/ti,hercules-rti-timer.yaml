@@ -12,14 +12,3 @@ description: |
 compatible: "ti,hercules-rti-timer"
 
 include: [base.yaml]
-
-properties:
-  rti-clk-divider:
-    type: int
-    default: 0
-    enum:
-      - 0
-      - 1
-      - 2
-      - 3
-    description: RTI clock divider.
