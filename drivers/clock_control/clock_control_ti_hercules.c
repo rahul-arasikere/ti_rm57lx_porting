@@ -40,8 +40,8 @@
 #define RFSLIP  BIT(8)
 #define OSCFAIL BIT(0)
 
-#define PENA             BIT(8)
-#define ESM_SRx_PLLxSLIP BIT(10)
+#define PENA                  BIT(8)
+#define ESM_SRx_PLLxSLIP      BIT(10)
 /* Fixed clock frequencies */
 #define CLOCK_OSCIN_FREQ      DT_PROP(OSCIN_CLOCK_NODE, clock_frequency)
 #define CLOCK_EXT_CLKIN1_FREQ DT_PROP(EXT_CLKIN1_NODE, clock_frequency)
