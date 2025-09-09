@@ -3,6 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * The systicks for this potentially tickless system is provided from the CNT0.
+ * If tickless is enabled, compare 0 is used to provide the time keeping for the
+ * kernel.
+ */
+
 #include <zephyr/device.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
@@ -17,8 +23,8 @@
 
 #define DT_DRV_COMPAT ti_hercules_rti_timer
 
-#if DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT) > 1
-#error Only one RTI driver instance should be enabled
+#if IS_ENABLED(CONFIG_TICKLESS_KERNEL) && DT_INST_HAS_STATUS_OKAY(DT_NODELABEL(counter0))
+#error counter0 is used for tickless capability, either disable TICKLESS_KERNEL or counter0.
 #endif
 
 #define RTI_NODE DT_NODELABEL(rti)
@@ -39,7 +45,7 @@ void sys_clock_disable(void)
 {
 	volatile struct hercules_rti_regs *regs =
 		(volatile struct hercules_rti_regs *)DT_REG_ADDR(RTI_NODE);
-	regs->GCTRL &= ~(CNT1EN | CNT0EN);
+	regs->GCTRL &= ~(CNT0EN);
 }
 
 uint32_t sys_clock_cycle_get_32(void)

@@ -12,3 +12,31 @@ description: |
 compatible: "ti,hercules-rti-timer"
 
 include: [base.yaml]
+
+properties:
+  ntu:
+    required: false
+    type: string
+    description: Network timebase unit selection.
+    enum:
+      - "flexray-macro-tick"
+      - "flexray-start-of-cycle"
+      - "pll2"
+      - "external1"
+  
+  continue-on-suspend:
+    type: boolean
+    description: Continue counters on debugging halt.
+
+  increment-on-failure:
+    type: boolean
+    description: Determines whether the free running counter 0 (RTIFRC0) is automatically incremented if a failing clock on the NTU signal is detected.
+
+  timebase-external:
+    type: boolean
+    description: |
+      Selects whether the free running counter 0 (RTIFRC0) is clocked by the internal up counter 0 (RTIUC0) or from the external signal NTU. 
+      
+      Setting the TBEXT bit from 0 to 1 will not increment RTIFRC0, since RTIUC0 is reset.
+      
+      When the timebase supervisor circuit detects a missing clock edge, then the TBEXT bit is reset.
