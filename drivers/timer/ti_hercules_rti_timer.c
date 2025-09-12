@@ -32,6 +32,13 @@
 #define CNT1EN BIT(1)
 #define CNT0EN BIT(0)
 
+enum ntu_time_source {
+	FLEXRAY_MACRO_TICK = 0,
+	FLEXRAY_START_OF_CYCLE = 1,
+	PLL2 = 2,
+	EXTERNAL1 = 3,
+};
+
 static void rti_irq_handler(const struct device *dev) {
 
 };
@@ -68,6 +75,23 @@ void sys_clock_set_timeout(int32_t ticks, bool idle)
 
 static int sys_clock_driver_init(void)
 {
+	volatile struct hercules_rti_regs *regs = DT_REG_ADDR(RTI_NODE);
+	regs->GCTRL = 0;
+#if DT_NODE_HAS_PROP(RTI_NODE, ntu)
+	switch ((enum ntu_time_source)DT_ENUM_IDX(RTI_NODE, ntu)) {
+	case FLEXRAY_MACRO_TICK:
+		break;
+
+	case FLEXRAY_START_OF_CYCLE:
+		break;
+
+	case PLL2:
+		break;
+
+	case EXTERNAL1:
+	default:
+	}
+#endif
 	return 0;
 }
 

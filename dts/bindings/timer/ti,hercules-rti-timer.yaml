@@ -15,14 +15,14 @@ include: [base.yaml]
 
 properties:
   ntu:
-    required: false
     type: string
-    description: Network timebase unit selection.
+    description: Network timebase unit selection. Defaults to external1.
     enum:
       - "flexray-macro-tick"
       - "flexray-start-of-cycle"
       - "pll2"
       - "external1"
+    default: "external1"
 
   continue-on-suspend:
     type: boolean
