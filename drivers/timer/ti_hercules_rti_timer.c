@@ -23,11 +23,20 @@
 
 #define DT_DRV_COMPAT ti_hercules_rti_timer
 
-#if IS_ENABLED(CONFIG_TICKLESS_KERNEL) && DT_INST_HAS_STATUS_OKAY(DT_NODELABEL(counter0))
+#define RTI_NODE DT_NODELABEL(rti)
+
+#define TICKLESS IS_ENABLED(CONFIG_TICKLESS_KERNEL)
+
+#if TICKLESS && DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(counter0))
 #error counter0 is used for tickless capability, either disable TICKLESS_KERNEL or counter0.
 #endif
 
-#define RTI_NODE DT_NODELABEL(rti)
+#if DT_PROP(RTI_NODE, increment_on_failure) && DT_PROP(RTI_NODE, timebase_external)
+#error timebase-external and increment-on-failure properties are mutually exclusive.
+#endif
+
+#define INC_ON_FAIL_EN BIT(1)
+#define TBEXT_EN       BIT(0)
 
 #define CNT1EN BIT(1)
 #define CNT0EN BIT(0)
@@ -75,23 +84,50 @@ void sys_clock_set_timeout(int32_t ticks, bool idle)
 
 static int sys_clock_driver_init(void)
 {
-	volatile struct hercules_rti_regs *regs = DT_REG_ADDR(RTI_NODE);
+	volatile struct hercules_rti_regs *regs =
+		(volatile struct hercules_rti_regs *)DT_REG_ADDR(RTI_NODE);
 	regs->GCTRL = 0;
-#if DT_NODE_HAS_PROP(RTI_NODE, ntu)
-	switch ((enum ntu_time_source)DT_ENUM_IDX(RTI_NODE, ntu)) {
-	case FLEXRAY_MACRO_TICK:
+	/* Setup NTU clock source if defined in dts or default to FLEXRAY_MACRO_TICK as in TRM */
+	switch ((enum ntu_time_source)DT_ENUM_IDX_OR(RTI_NODE, ntu, FLEXRAY_MACRO_TICK)) {
+	case EXTERNAL1:
+		regs->GCTRL |= (0xFU << 16U);
 		break;
 
 	case FLEXRAY_START_OF_CYCLE:
+		regs->GCTRL |= (0x5U << 16U);
 		break;
 
 	case PLL2:
+		regs->GCTRL |= (0xAU << 16U);
 		break;
 
-	case EXTERNAL1:
+	case FLEXRAY_MACRO_TICK:
 	default:
+		/* GCTRL is 0'd already*/
 	}
+	return 0;
+#if DT_PROP(RTI_NODE, continue_on_suspend)
+	regs->GCTRL |= BIT(15);
 #endif
+	regs->TBCTRL = 0;
+#if DT_PROP(RTI_NODE, increment_on_failure)
+	regs->TBCTRL |= INC_ON_FAIL_EN;
+#endif
+#if DT_PROP(RTI_NODE, timebase_external)
+	regs->TBCTRL |= TBEXT_EN;
+#endif
+
+#if TICKLESS
+	/* Disable external capture event for counter 0 */
+	regs->CAPCTRL &= ~(BIT(0));
+	/* Set counter0 as compare source for compare 0*/
+	regs->COMPCTRL &= ~(BIT(0));
+
+	/* Reset up counter and free running counter 0 */
+	regs->CNT[0].UCx = 0;
+	regs->CNT[0].FRCx = 0;
+#endif
+
 	return 0;
 }
 

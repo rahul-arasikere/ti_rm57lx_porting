@@ -36,7 +36,5 @@ properties:
     type: boolean
     description: |
       Selects whether the free running counter 0 (RTIFRC0) is clocked by the internal up counter 0 (RTIUC0) or from the external signal NTU.
-
       Setting the TBEXT bit from 0 to 1 will not increment RTIFRC0, since RTIUC0 is reset.
-
       When the timebase supervisor circuit detects a missing clock edge, then the TBEXT bit is reset.
